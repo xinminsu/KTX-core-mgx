@@ -36,8 +36,8 @@ describe("Vault.buyUSDG", function () {
   let distributor0;
   let yieldTracker0;
 
-  let klpManager;
-  let klp;
+  let glpManager;
+  let glp;
 
   beforeEach(async () => {
     bnb = await deployContract("Token", []);
@@ -92,16 +92,16 @@ describe("Vault.buyUSDG", function () {
       false
     );
 
-    klp = await deployContract("KLP", []);
+    glp = await deployContract("GLP", []);
     let shortsTracker = await await deployContract(
       "ShortsTracker",
       [vault.address],
       "ShortsTracker"
     );
-    klpManager = await deployContract("KlpManager", [
+    glpManager = await deployContract("GlpManager", [
       vault.address,
       usdg.address,
-      klp.address,
+      glp.address,
       shortsTracker.address,
       24 * 60 * 60,
     ]);
@@ -144,7 +144,7 @@ describe("Vault.buyUSDG", function () {
 
     await validateVaultBalance(expect, vault, bnb);
 
-    expect(await klpManager.getAumInUsdg(true)).eq(29700);
+    expect(await glpManager.getAumInUsdg(true)).eq(29700);
   });
 
   it("buyUSDG allows gov to mint", async () => {

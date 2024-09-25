@@ -68,6 +68,33 @@ module.exports = {
           "daughter lyrics tooth napkin walnut panic fancy roof endorse assist edge chief",
       },
     },
+    basetestnet: {
+      url: "https://virtual.base-sepolia.rpc.tenderly.co/d269e7d2-719c-40e2-87c0-044cbc6cee91",
+      chainId: 84532,
+      gas: "auto",
+      accounts: {
+        mnemonic:
+          "walnut stereo antenna hazard kick march derive february twenty today lamp gasp",
+      },
+    },
+    arbitrum: {
+      url: "https://virtual.arbitrum.rpc.tenderly.co/84acdb47-e15b-46d2-8ce0-4ba7676f2416",
+      chainId: 42161,
+      gas: "auto",
+      accounts: {
+        mnemonic:
+          "walnut stereo antenna hazard kick march derive february twenty today lamp gasp",
+      },
+    },
+    avalanche: {
+      url: "https://virtual.avalanche.rpc.tenderly.co/a0b6381f-1cf1-4e31-a3ba-fb951b4963ef",
+      chainId: 43114,
+      gas: "auto",
+      accounts: {
+        mnemonic:
+          "walnut stereo antenna hazard kick march derive february twenty today lamp gasp",
+      },
+    },
   },
   etherscan: {
     apiKey: {

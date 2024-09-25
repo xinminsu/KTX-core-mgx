@@ -17,8 +17,8 @@ describe("RewardTracker", function () {
   const provider = waffle.provider;
   const [wallet, user0, user1, user2, user3] = provider.getWallets();
   let rewardTracker;
-  let ktx;
-  let esKtx;
+  let gmx;
+  let esGmx;
   let rewardDistributor;
 
   beforeEach(async () => {
@@ -26,16 +26,16 @@ describe("RewardTracker", function () {
       "RT_NAME",
       "RT_SYMBOL",
     ]);
-    ktx = await deployContract("KTX", []);
-    esKtx = await deployContract("EsKTX", []);
+    gmx = await deployContract("GMX", []);
+    esGmx = await deployContract("EsGMX", []);
     rewardDistributor = await deployContract("RewardDistributor", [
-      esKtx.address,
+      esGmx.address,
       rewardTracker.address,
     ]);
     await rewardDistributor.updateLastDistributionTime();
 
     await rewardTracker.initialize(
-      [ktx.address, esKtx.address],
+      [gmx.address, esGmx.address],
       rewardDistributor.address
     );
   });
@@ -43,15 +43,15 @@ describe("RewardTracker", function () {
   it("inits", async () => {
     expect(await rewardTracker.isInitialized()).eq(true);
     expect(await rewardTracker.isDepositToken(wallet.address)).eq(false);
-    expect(await rewardTracker.isDepositToken(ktx.address)).eq(true);
-    expect(await rewardTracker.isDepositToken(esKtx.address)).eq(true);
+    expect(await rewardTracker.isDepositToken(gmx.address)).eq(true);
+    expect(await rewardTracker.isDepositToken(esGmx.address)).eq(true);
     expect(await rewardTracker.distributor()).eq(rewardDistributor.address);
     expect(await rewardTracker.distributor()).eq(rewardDistributor.address);
-    expect(await rewardTracker.rewardToken()).eq(esKtx.address);
+    expect(await rewardTracker.rewardToken()).eq(esGmx.address);
 
     await expect(
       rewardTracker.initialize(
-        [ktx.address, esKtx.address],
+        [gmx.address, esGmx.address],
         rewardDistributor.address
       )
     ).to.be.revertedWith("RewardTracker: already initialized");
@@ -108,33 +108,33 @@ describe("RewardTracker", function () {
   });
 
   it("withdrawToken", async () => {
-    await ktx.setMinter(wallet.address, true);
-    await ktx.mint(rewardTracker.address, 2000);
+    await gmx.setMinter(wallet.address, true);
+    await gmx.mint(rewardTracker.address, 2000);
     await expect(
       rewardTracker
         .connect(user0)
-        .withdrawToken(ktx.address, user1.address, 2000)
+        .withdrawToken(gmx.address, user1.address, 2000)
     ).to.be.revertedWith("Governable: forbidden");
 
     await rewardTracker.setGov(user0.address);
 
-    expect(await ktx.balanceOf(user1.address)).eq(0);
+    expect(await gmx.balanceOf(user1.address)).eq(0);
     await rewardTracker
       .connect(user0)
-      .withdrawToken(ktx.address, user1.address, 2000);
-    expect(await ktx.balanceOf(user1.address)).eq(2000);
+      .withdrawToken(gmx.address, user1.address, 2000);
+    expect(await gmx.balanceOf(user1.address)).eq(2000);
   });
 
   it("stake, unstake, claim", async () => {
-    await esKtx.setMinter(wallet.address, true);
-    await esKtx.mint(rewardDistributor.address, expandDecimals(50000, 18));
-    await rewardDistributor.setTokensPerInterval("20667989410000000"); // 0.02066798941 esKtx per second
-    await ktx.setMinter(wallet.address, true);
-    await ktx.mint(user0.address, expandDecimals(1000, 18));
+    await esGmx.setMinter(wallet.address, true);
+    await esGmx.mint(rewardDistributor.address, expandDecimals(50000, 18));
+    await rewardDistributor.setTokensPerInterval("20667989410000000"); // 0.02066798941 esGmx per second
+    await gmx.setMinter(wallet.address, true);
+    await gmx.mint(user0.address, expandDecimals(1000, 18));
 
     await rewardTracker.setInPrivateStakingMode(true);
     await expect(
-      rewardTracker.connect(user0).stake(ktx.address, expandDecimals(1000, 18))
+      rewardTracker.connect(user0).stake(gmx.address, expandDecimals(1000, 18))
     ).to.be.revertedWith("RewardTracker: action not enabled");
 
     await rewardTracker.setInPrivateStakingMode(false);
@@ -150,19 +150,19 @@ describe("RewardTracker", function () {
     ).to.be.revertedWith("RewardTracker: invalid _depositToken");
 
     await expect(
-      rewardTracker.connect(user0).stake(ktx.address, expandDecimals(1000, 18))
+      rewardTracker.connect(user0).stake(gmx.address, expandDecimals(1000, 18))
     ).to.be.revertedWith("BaseToken: transfer amount exceeds allowance");
 
-    await ktx
+    await gmx
       .connect(user0)
       .approve(rewardTracker.address, expandDecimals(1000, 18));
     await rewardTracker
       .connect(user0)
-      .stake(ktx.address, expandDecimals(1000, 18));
+      .stake(gmx.address, expandDecimals(1000, 18));
     expect(await rewardTracker.stakedAmounts(user0.address)).eq(
       expandDecimals(1000, 18)
     );
-    expect(await rewardTracker.depositBalances(user0.address, ktx.address)).eq(
+    expect(await rewardTracker.depositBalances(user0.address, gmx.address)).eq(
       expandDecimals(1000, 18)
     );
 
@@ -176,35 +176,35 @@ describe("RewardTracker", function () {
       expandDecimals(1786, 18)
     );
 
-    await esKtx.mint(user1.address, expandDecimals(500, 18));
-    await esKtx
+    await esGmx.mint(user1.address, expandDecimals(500, 18));
+    await esGmx
       .connect(user1)
       .approve(rewardTracker.address, expandDecimals(500, 18));
     await rewardTracker
       .connect(user1)
-      .stake(esKtx.address, expandDecimals(500, 18));
+      .stake(esGmx.address, expandDecimals(500, 18));
     expect(await rewardTracker.stakedAmounts(user1.address)).eq(
       expandDecimals(500, 18)
     );
     expect(await rewardTracker.stakedAmounts(user0.address)).eq(
       expandDecimals(1000, 18)
     );
-    expect(await rewardTracker.depositBalances(user0.address, ktx.address)).eq(
+    expect(await rewardTracker.depositBalances(user0.address, gmx.address)).eq(
       expandDecimals(1000, 18)
     );
     expect(
-      await rewardTracker.depositBalances(user0.address, esKtx.address)
+      await rewardTracker.depositBalances(user0.address, esGmx.address)
     ).eq(0);
-    expect(await rewardTracker.depositBalances(user1.address, ktx.address)).eq(
+    expect(await rewardTracker.depositBalances(user1.address, gmx.address)).eq(
       0
     );
     expect(
-      await rewardTracker.depositBalances(user1.address, esKtx.address)
+      await rewardTracker.depositBalances(user1.address, esGmx.address)
     ).eq(expandDecimals(500, 18));
-    expect(await rewardTracker.totalDepositSupply(ktx.address)).eq(
+    expect(await rewardTracker.totalDepositSupply(gmx.address)).eq(
       expandDecimals(1000, 18)
     );
-    expect(await rewardTracker.totalDepositSupply(esKtx.address)).eq(
+    expect(await rewardTracker.totalDepositSupply(esGmx.address)).eq(
       expandDecimals(500, 18)
     );
 
@@ -233,28 +233,28 @@ describe("RewardTracker", function () {
     await expect(
       rewardTracker
         .connect(user0)
-        .unstake(esKtx.address, expandDecimals(1001, 18))
+        .unstake(esGmx.address, expandDecimals(1001, 18))
     ).to.be.revertedWith("RewardTracker: _amount exceeds stakedAmount");
 
     await expect(
       rewardTracker
         .connect(user0)
-        .unstake(esKtx.address, expandDecimals(1000, 18))
+        .unstake(esGmx.address, expandDecimals(1000, 18))
     ).to.be.revertedWith("RewardTracker: _amount exceeds depositBalance");
 
     await expect(
       rewardTracker
         .connect(user0)
-        .unstake(ktx.address, expandDecimals(1001, 18))
+        .unstake(gmx.address, expandDecimals(1001, 18))
     ).to.be.revertedWith("RewardTracker: _amount exceeds stakedAmount");
 
-    expect(await ktx.balanceOf(user0.address)).eq(0);
+    expect(await gmx.balanceOf(user0.address)).eq(0);
     await rewardTracker
       .connect(user0)
-      .unstake(ktx.address, expandDecimals(1000, 18));
-    expect(await ktx.balanceOf(user0.address)).eq(expandDecimals(1000, 18));
-    expect(await rewardTracker.totalDepositSupply(ktx.address)).eq(0);
-    expect(await rewardTracker.totalDepositSupply(esKtx.address)).eq(
+      .unstake(gmx.address, expandDecimals(1000, 18));
+    expect(await gmx.balanceOf(user0.address)).eq(expandDecimals(1000, 18));
+    expect(await rewardTracker.totalDepositSupply(gmx.address)).eq(0);
+    expect(await rewardTracker.totalDepositSupply(esGmx.address)).eq(
       expandDecimals(500, 18)
     );
 
@@ -271,15 +271,15 @@ describe("RewardTracker", function () {
     expect(await rewardTracker.cumulativeRewards(user1.address)).eq(0);
 
     await expect(
-      rewardTracker.connect(user0).unstake(ktx.address, 1)
+      rewardTracker.connect(user0).unstake(gmx.address, 1)
     ).to.be.revertedWith("RewardTracker: _amount exceeds stakedAmount");
 
-    expect(await esKtx.balanceOf(user0.address)).eq(0);
+    expect(await esGmx.balanceOf(user0.address)).eq(0);
     await rewardTracker.connect(user0).claim(user2.address);
-    expect(await esKtx.balanceOf(user2.address)).gt(
+    expect(await esGmx.balanceOf(user2.address)).gt(
       expandDecimals(1785 + 1190, 18)
     );
-    expect(await esKtx.balanceOf(user2.address)).lt(
+    expect(await esGmx.balanceOf(user2.address)).lt(
       expandDecimals(1786 + 1191, 18)
     );
 
@@ -295,17 +295,17 @@ describe("RewardTracker", function () {
       expandDecimals(596 + 1786, 18)
     );
 
-    await ktx.mint(user1.address, expandDecimals(300, 18));
-    await ktx
+    await gmx.mint(user1.address, expandDecimals(300, 18));
+    await gmx
       .connect(user1)
       .approve(rewardTracker.address, expandDecimals(300, 18));
     await rewardTracker
       .connect(user1)
-      .stake(ktx.address, expandDecimals(300, 18));
-    expect(await rewardTracker.totalDepositSupply(ktx.address)).eq(
+      .stake(gmx.address, expandDecimals(300, 18));
+    expect(await rewardTracker.totalDepositSupply(gmx.address)).eq(
       expandDecimals(300, 18)
     );
-    expect(await rewardTracker.totalDepositSupply(esKtx.address)).eq(
+    expect(await rewardTracker.totalDepositSupply(esGmx.address)).eq(
       expandDecimals(500, 18)
     );
 
@@ -329,13 +329,13 @@ describe("RewardTracker", function () {
     );
 
     await expect(
-      rewardTracker.connect(user1).unstake(ktx.address, expandDecimals(301, 18))
+      rewardTracker.connect(user1).unstake(gmx.address, expandDecimals(301, 18))
     ).to.be.revertedWith("RewardTracker: _amount exceeds depositBalance");
 
     await expect(
       rewardTracker
         .connect(user1)
-        .unstake(esKtx.address, expandDecimals(501, 18))
+        .unstake(esGmx.address, expandDecimals(501, 18))
     ).to.be.revertedWith("RewardTracker: _amount exceeds depositBalance");
 
     await increaseTime(provider, 2 * 24 * 60 * 60);
@@ -394,33 +394,33 @@ describe("RewardTracker", function () {
       expandDecimals(596 + 1786 + 1786 * 4, 18)
     );
 
-    expect(await esKtx.balanceOf(user2.address)).eq(
+    expect(await esGmx.balanceOf(user2.address)).eq(
       await rewardTracker.cumulativeRewards(user0.address)
     );
-    expect(await esKtx.balanceOf(user3.address)).eq(
+    expect(await esGmx.balanceOf(user3.address)).eq(
       await rewardTracker.cumulativeRewards(user1.address)
     );
 
-    expect(await ktx.balanceOf(user1.address)).eq(0);
-    expect(await esKtx.balanceOf(user1.address)).eq(0);
+    expect(await gmx.balanceOf(user1.address)).eq(0);
+    expect(await esGmx.balanceOf(user1.address)).eq(0);
     await rewardTracker
       .connect(user1)
-      .unstake(ktx.address, expandDecimals(300, 18));
-    expect(await ktx.balanceOf(user1.address)).eq(expandDecimals(300, 18));
-    expect(await esKtx.balanceOf(user1.address)).eq(0);
+      .unstake(gmx.address, expandDecimals(300, 18));
+    expect(await gmx.balanceOf(user1.address)).eq(expandDecimals(300, 18));
+    expect(await esGmx.balanceOf(user1.address)).eq(0);
     await rewardTracker
       .connect(user1)
-      .unstake(esKtx.address, expandDecimals(500, 18));
-    expect(await ktx.balanceOf(user1.address)).eq(expandDecimals(300, 18));
-    expect(await esKtx.balanceOf(user1.address)).eq(expandDecimals(500, 18));
-    expect(await rewardTracker.totalDepositSupply(ktx.address)).eq(0);
-    expect(await rewardTracker.totalDepositSupply(esKtx.address)).eq(0);
+      .unstake(esGmx.address, expandDecimals(500, 18));
+    expect(await gmx.balanceOf(user1.address)).eq(expandDecimals(300, 18));
+    expect(await esGmx.balanceOf(user1.address)).eq(expandDecimals(500, 18));
+    expect(await rewardTracker.totalDepositSupply(gmx.address)).eq(0);
+    expect(await rewardTracker.totalDepositSupply(esGmx.address)).eq(0);
 
     await rewardTracker.connect(user0).claim(user2.address);
     await rewardTracker.connect(user1).claim(user3.address);
 
     const distributed = expandDecimals(50000, 18).sub(
-      await esKtx.balanceOf(rewardDistributor.address)
+      await esGmx.balanceOf(rewardDistributor.address)
     );
     const cumulativeReward0 = await rewardTracker.cumulativeRewards(
       user0.address
@@ -435,15 +435,15 @@ describe("RewardTracker", function () {
   });
 
   it("stakeForAccount, unstakeForAccount, claimForAccount", async () => {
-    await esKtx.setMinter(wallet.address, true);
-    await esKtx.mint(rewardDistributor.address, expandDecimals(50000, 18));
-    await rewardDistributor.setTokensPerInterval("20667989410000000"); // 0.02066798941 esKtx per second
-    await ktx.setMinter(wallet.address, true);
-    await ktx.mint(wallet.address, expandDecimals(1000, 18));
+    await esGmx.setMinter(wallet.address, true);
+    await esGmx.mint(rewardDistributor.address, expandDecimals(50000, 18));
+    await rewardDistributor.setTokensPerInterval("20667989410000000"); // 0.02066798941 esGmx per second
+    await gmx.setMinter(wallet.address, true);
+    await gmx.mint(wallet.address, expandDecimals(1000, 18));
 
     await rewardTracker.setInPrivateStakingMode(true);
     await expect(
-      rewardTracker.connect(user0).stake(ktx.address, expandDecimals(1000, 18))
+      rewardTracker.connect(user0).stake(gmx.address, expandDecimals(1000, 18))
     ).to.be.revertedWith("RewardTracker: action not enabled");
 
     await expect(
@@ -452,7 +452,7 @@ describe("RewardTracker", function () {
         .stakeForAccount(
           wallet.address,
           user0.address,
-          ktx.address,
+          gmx.address,
           expandDecimals(1000, 18)
         )
     ).to.be.revertedWith("RewardTracker: forbidden");
@@ -464,12 +464,12 @@ describe("RewardTracker", function () {
         .stakeForAccount(
           wallet.address,
           user0.address,
-          ktx.address,
+          gmx.address,
           expandDecimals(1000, 18)
         )
     ).to.be.revertedWith("BaseToken: transfer amount exceeds allowance");
 
-    await ktx
+    await gmx
       .connect(wallet)
       .approve(rewardTracker.address, expandDecimals(1000, 18));
 
@@ -478,13 +478,13 @@ describe("RewardTracker", function () {
       .stakeForAccount(
         wallet.address,
         user0.address,
-        ktx.address,
+        gmx.address,
         expandDecimals(1000, 18)
       );
     expect(await rewardTracker.stakedAmounts(user0.address)).eq(
       expandDecimals(1000, 18)
     );
-    expect(await rewardTracker.depositBalances(user0.address, ktx.address)).eq(
+    expect(await rewardTracker.depositBalances(user0.address, gmx.address)).eq(
       expandDecimals(1000, 18)
     );
 
@@ -504,7 +504,7 @@ describe("RewardTracker", function () {
         .connect(user2)
         .unstakeForAccount(
           user0.address,
-          esKtx.address,
+          esGmx.address,
           expandDecimals(1000, 18),
           user1.address
         )
@@ -517,7 +517,7 @@ describe("RewardTracker", function () {
         .connect(user2)
         .unstakeForAccount(
           user0.address,
-          esKtx.address,
+          esGmx.address,
           expandDecimals(1000, 18),
           user1.address
         )
@@ -528,17 +528,17 @@ describe("RewardTracker", function () {
         .connect(user2)
         .unstakeForAccount(
           user0.address,
-          ktx.address,
+          gmx.address,
           expandDecimals(1001, 18),
           user1.address
         )
     ).to.be.revertedWith("RewardTracker: _amount exceeds stakedAmount");
 
-    expect(await ktx.balanceOf(user0.address)).eq(0);
+    expect(await gmx.balanceOf(user0.address)).eq(0);
     expect(await rewardTracker.stakedAmounts(user0.address)).eq(
       expandDecimals(1000, 18)
     );
-    expect(await rewardTracker.depositBalances(user0.address, ktx.address)).eq(
+    expect(await rewardTracker.depositBalances(user0.address, gmx.address)).eq(
       expandDecimals(1000, 18)
     );
 
@@ -582,16 +582,16 @@ describe("RewardTracker", function () {
       .connect(user2)
       .unstakeForAccount(
         user0.address,
-        ktx.address,
+        gmx.address,
         expandDecimals(100, 18),
         user1.address
       );
 
-    expect(await ktx.balanceOf(user1.address)).eq(expandDecimals(100, 18));
+    expect(await gmx.balanceOf(user1.address)).eq(expandDecimals(100, 18));
     expect(await rewardTracker.stakedAmounts(user0.address)).eq(
       expandDecimals(900, 18)
     );
-    expect(await rewardTracker.depositBalances(user0.address, ktx.address)).eq(
+    expect(await rewardTracker.depositBalances(user0.address, gmx.address)).eq(
       expandDecimals(900, 18)
     );
 
@@ -605,15 +605,15 @@ describe("RewardTracker", function () {
     expect(await rewardTracker.claimable(user0.address)).lt(
       expandDecimals(1787, 18)
     );
-    expect(await esKtx.balanceOf(user0.address)).eq(0);
-    expect(await esKtx.balanceOf(user3.address)).eq(0);
+    expect(await esGmx.balanceOf(user0.address)).eq(0);
+    expect(await esGmx.balanceOf(user3.address)).eq(0);
 
     await rewardTracker
       .connect(user2)
       .claimForAccount(user0.address, user3.address);
 
     expect(await rewardTracker.claimable(user0.address)).eq(0);
-    expect(await esKtx.balanceOf(user3.address)).gt(expandDecimals(1785, 18));
-    expect(await esKtx.balanceOf(user3.address)).lt(expandDecimals(1787, 18));
+    expect(await esGmx.balanceOf(user3.address)).gt(expandDecimals(1785, 18));
+    expect(await esGmx.balanceOf(user3.address)).lt(expandDecimals(1787, 18));
   });
 });

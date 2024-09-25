@@ -624,35 +624,35 @@ describe("Timelock", function () {
 
   it("processMint", async () => {
     await timelock.setContractHandler(user0.address, true);
-    const ktx = await deployContract("KTX", []);
-    await ktx.setGov(timelock.address);
+    const gmx = await deployContract("GMX", []);
+    await gmx.setGov(timelock.address);
 
     await expect(
       timelock
         .connect(user0)
-        .processMint(ktx.address, user1.address, expandDecimals(100, 18))
+        .processMint(gmx.address, user1.address, expandDecimals(100, 18))
     ).to.be.revertedWith("Timelock: forbidden");
 
     await expect(
       timelock
         .connect(wallet)
-        .processMint(ktx.address, user1.address, expandDecimals(100, 18))
+        .processMint(gmx.address, user1.address, expandDecimals(100, 18))
     ).to.be.revertedWith("Timelock: action not signalled");
 
     await expect(
       timelock
         .connect(user0)
-        .signalMint(ktx.address, user1.address, expandDecimals(100, 18))
+        .signalMint(gmx.address, user1.address, expandDecimals(100, 18))
     ).to.be.revertedWith("Timelock: forbidden");
 
     await timelock
       .connect(wallet)
-      .signalMint(ktx.address, user1.address, expandDecimals(100, 18));
+      .signalMint(gmx.address, user1.address, expandDecimals(100, 18));
 
     await expect(
       timelock
         .connect(wallet)
-        .processMint(ktx.address, user1.address, expandDecimals(100, 18))
+        .processMint(gmx.address, user1.address, expandDecimals(100, 18))
     ).to.be.revertedWith("Timelock: action time not yet passed");
 
     await increaseTime(provider, 4 * 24 * 60 * 60);
@@ -661,7 +661,7 @@ describe("Timelock", function () {
     await expect(
       timelock
         .connect(wallet)
-        .processMint(ktx.address, user1.address, expandDecimals(100, 18))
+        .processMint(gmx.address, user1.address, expandDecimals(100, 18))
     ).to.be.revertedWith("Timelock: action time not yet passed");
 
     await increaseTime(provider, 1 * 24 * 60 * 60 + 10);
@@ -676,39 +676,39 @@ describe("Timelock", function () {
     await expect(
       timelock
         .connect(wallet)
-        .processMint(ktx.address, user2.address, expandDecimals(100, 18))
+        .processMint(gmx.address, user2.address, expandDecimals(100, 18))
     ).to.be.revertedWith("Timelock: action not signalled");
 
     await expect(
       timelock
         .connect(wallet)
-        .processMint(ktx.address, user1.address, expandDecimals(101, 18))
+        .processMint(gmx.address, user1.address, expandDecimals(101, 18))
     ).to.be.revertedWith("Timelock: action not signalled");
 
-    expect(await ktx.balanceOf(timelock.address)).eq(0);
-    expect(await ktx.balanceOf(user1.address)).eq(0);
+    expect(await gmx.balanceOf(timelock.address)).eq(0);
+    expect(await gmx.balanceOf(user1.address)).eq(0);
 
     await timelock
       .connect(wallet)
-      .processMint(ktx.address, user1.address, expandDecimals(100, 18));
+      .processMint(gmx.address, user1.address, expandDecimals(100, 18));
 
-    expect(await ktx.balanceOf(timelock.address)).eq(0);
-    expect(await ktx.balanceOf(user1.address)).eq(expandDecimals(100, 18));
+    expect(await gmx.balanceOf(timelock.address)).eq(0);
+    expect(await gmx.balanceOf(user1.address)).eq(expandDecimals(100, 18));
 
     await expect(
       timelock
         .connect(wallet)
-        .processMint(ktx.address, user1.address, expandDecimals(100, 18))
+        .processMint(gmx.address, user1.address, expandDecimals(100, 18))
     ).to.be.revertedWith("Timelock: action not signalled");
 
     await timelock
       .connect(wallet)
-      .signalMint(ktx.address, user1.address, expandDecimals(100, 18));
+      .signalMint(gmx.address, user1.address, expandDecimals(100, 18));
 
     await expect(
       timelock
         .connect(wallet)
-        .processMint(ktx.address, user1.address, expandDecimals(100, 18))
+        .processMint(gmx.address, user1.address, expandDecimals(100, 18))
     ).to.be.revertedWith("Timelock: action time not yet passed");
 
     const action0 = ethers.utils.solidityKeccak256(
@@ -717,7 +717,7 @@ describe("Timelock", function () {
     );
     const action1 = ethers.utils.solidityKeccak256(
       ["string", "address", "address", "uint256"],
-      ["mint", ktx.address, user1.address, expandDecimals(100, 18)]
+      ["mint", gmx.address, user1.address, expandDecimals(100, 18)]
     );
 
     await expect(
@@ -733,15 +733,15 @@ describe("Timelock", function () {
     await expect(
       timelock
         .connect(wallet)
-        .processMint(ktx.address, user1.address, expandDecimals(100, 18))
+        .processMint(gmx.address, user1.address, expandDecimals(100, 18))
     ).to.be.revertedWith("Timelock: action not signalled");
   });
 
   it("setHandler", async () => {
     await timelock.setContractHandler(user0.address, true);
     const vester = await deployContract("Vester", [
-      "Vested KTX",
-      "veKTX",
+      "Vested GMX",
+      "veGMX",
       365 * 24 * 60 * 60,
       AddressZero,
       AddressZero,
@@ -983,35 +983,35 @@ describe("Timelock", function () {
   it("withdrawToken", async () => {
     await timelock.setContractHandler(user0.address, true);
 
-    const ktx = await deployContract("KTX", []);
-    await ktx.setGov(timelock.address);
+    const gmx = await deployContract("GMX", []);
+    await gmx.setGov(timelock.address);
 
     await expect(
       timelock
         .connect(user0)
-        .withdrawToken(ktx.address, bnb.address, user0.address, 100)
+        .withdrawToken(gmx.address, bnb.address, user0.address, 100)
     ).to.be.revertedWith("Timelock: forbidden");
 
     await expect(
       timelock
         .connect(wallet)
-        .withdrawToken(ktx.address, bnb.address, user0.address, 100)
+        .withdrawToken(gmx.address, bnb.address, user0.address, 100)
     ).to.be.revertedWith("Timelock: action not signalled");
 
     await expect(
       timelock
         .connect(user0)
-        .signalWithdrawToken(ktx.address, bnb.address, user0.address, 100)
+        .signalWithdrawToken(gmx.address, bnb.address, user0.address, 100)
     ).to.be.revertedWith("Timelock: forbidden");
 
     await timelock
       .connect(wallet)
-      .signalWithdrawToken(ktx.address, bnb.address, user0.address, 100);
+      .signalWithdrawToken(gmx.address, bnb.address, user0.address, 100);
 
     await expect(
       timelock
         .connect(wallet)
-        .withdrawToken(ktx.address, bnb.address, user0.address, 100)
+        .withdrawToken(gmx.address, bnb.address, user0.address, 100)
     ).to.be.revertedWith("Timelock: action time not yet passed");
 
     await increaseTime(provider, 4 * 24 * 60 * 60);
@@ -1020,7 +1020,7 @@ describe("Timelock", function () {
     await expect(
       timelock
         .connect(wallet)
-        .withdrawToken(ktx.address, bnb.address, user0.address, 100)
+        .withdrawToken(gmx.address, bnb.address, user0.address, 100)
     ).to.be.revertedWith("Timelock: action time not yet passed");
 
     await increaseTime(provider, 1 * 24 * 60 * 60 + 10);
@@ -1035,32 +1035,32 @@ describe("Timelock", function () {
     await expect(
       timelock
         .connect(wallet)
-        .withdrawToken(ktx.address, dai.address, user0.address, 100)
+        .withdrawToken(gmx.address, dai.address, user0.address, 100)
     ).to.be.revertedWith("Timelock: action not signalled");
 
     await expect(
       timelock
         .connect(wallet)
-        .withdrawToken(ktx.address, bnb.address, user1.address, 100)
+        .withdrawToken(gmx.address, bnb.address, user1.address, 100)
     ).to.be.revertedWith("Timelock: action not signalled");
 
     await expect(
       timelock
         .connect(wallet)
-        .withdrawToken(ktx.address, bnb.address, user0.address, 101)
+        .withdrawToken(gmx.address, bnb.address, user0.address, 101)
     ).to.be.revertedWith("Timelock: action not signalled");
 
     await expect(
       timelock
         .connect(wallet)
-        .withdrawToken(ktx.address, bnb.address, user0.address, 100)
+        .withdrawToken(gmx.address, bnb.address, user0.address, 100)
     ).to.be.revertedWith("ERC20: transfer amount exceeds balance");
 
-    await bnb.mint(ktx.address, 100);
+    await bnb.mint(gmx.address, 100);
     expect(await bnb.balanceOf(user0.address)).eq(0);
     await timelock
       .connect(wallet)
-      .withdrawToken(ktx.address, bnb.address, user0.address, 100);
+      .withdrawToken(gmx.address, bnb.address, user0.address, 100);
     expect(await bnb.balanceOf(user0.address)).eq(100);
   });
 
@@ -1357,43 +1357,43 @@ describe("Timelock", function () {
   // });
 
   it("setInPrivateTransferMode", async () => {
-    const ktx = await deployContract("KTX", []);
-    await ktx.setMinter(wallet.address, true);
-    await ktx.mint(user0.address, 100);
+    const gmx = await deployContract("GMX", []);
+    await gmx.setMinter(wallet.address, true);
+    await gmx.mint(user0.address, 100);
     await expect(
-      timelock.connect(user0).setInPrivateTransferMode(ktx.address, true)
+      timelock.connect(user0).setInPrivateTransferMode(gmx.address, true)
     ).to.be.revertedWith("Timelock: forbidden");
 
     await expect(
-      timelock.connect(wallet).setInPrivateTransferMode(ktx.address, true)
+      timelock.connect(wallet).setInPrivateTransferMode(gmx.address, true)
     ).to.be.revertedWith("BaseToken: forbidden");
 
-    await ktx.setGov(timelock.address);
+    await gmx.setGov(timelock.address);
 
-    expect(await ktx.inPrivateTransferMode()).eq(false);
-    await timelock.connect(wallet).setInPrivateTransferMode(ktx.address, true);
-    expect(await ktx.inPrivateTransferMode()).eq(true);
+    expect(await gmx.inPrivateTransferMode()).eq(false);
+    await timelock.connect(wallet).setInPrivateTransferMode(gmx.address, true);
+    expect(await gmx.inPrivateTransferMode()).eq(true);
 
-    await timelock.connect(wallet).setInPrivateTransferMode(ktx.address, false);
-    expect(await ktx.inPrivateTransferMode()).eq(false);
+    await timelock.connect(wallet).setInPrivateTransferMode(gmx.address, false);
+    expect(await gmx.inPrivateTransferMode()).eq(false);
 
-    await timelock.connect(wallet).setInPrivateTransferMode(ktx.address, true);
-    expect(await ktx.inPrivateTransferMode()).eq(true);
+    await timelock.connect(wallet).setInPrivateTransferMode(gmx.address, true);
+    expect(await gmx.inPrivateTransferMode()).eq(true);
 
     await expect(
-      ktx.connect(user0).transfer(user1.address, 100)
+      gmx.connect(user0).transfer(user1.address, 100)
     ).to.be.revertedWith("BaseToken: msg.sender not whitelisted");
 
-    await timelock.connect(wallet).setInPrivateTransferMode(ktx.address, false);
-    expect(await ktx.inPrivateTransferMode()).eq(false);
+    await timelock.connect(wallet).setInPrivateTransferMode(gmx.address, false);
+    expect(await gmx.inPrivateTransferMode()).eq(false);
 
-    await ktx.connect(user0).transfer(user1.address, 100);
+    await gmx.connect(user0).transfer(user1.address, 100);
   });
 
   it("batchSetBonusRewards", async () => {
     const vester = await deployContract("Vester", [
-      "Vested KTX",
-      "veKTX",
+      "Vested GMX",
+      "veGMX",
       365 * 24 * 60 * 60,
       AddressZero,
       AddressZero,
@@ -1423,25 +1423,25 @@ describe("Timelock", function () {
   });
 
   // it("managedSetMinter", async () => {
-  //   const ktx = await deployContract("KTX", []);
-  //   await ktx.setGov(timelock.address);
+  //   const gmx = await deployContract("GMX", []);
+  //   await gmx.setGov(timelock.address);
   //   await expect(
   //     timelock
   //       .connect(wallet)
-  //       .managedSetMinter(ktx.address, user1.address, true)
+  //       .managedSetMinter(gmx.address, user1.address, true)
   //   ).to.be.revertedWith("Timelock: forbidden");
 
-  //   expect(await ktx.isMinter(user1.address)).eq(false);
+  //   expect(await gmx.isMinter(user1.address)).eq(false);
   //   await timelock
   //     .connect(rewardManager)
-  //     .managedSetMinter(ktx.address, user1.address, true);
-  //   expect(await ktx.isMinter(user1.address)).eq(true);
+  //     .managedSetMinter(gmx.address, user1.address, true);
+  //   expect(await gmx.isMinter(user1.address)).eq(true);
   // });
 
   // it("managedSetHandler", async () => {
   //   const vester = await deployContract("Vester", [
-  //     "Vested KTX",
-  //     "veKTX",
+  //     "Vested GMX",
+  //     "veGMX",
   //     365 * 24 * 60 * 60,
   //     AddressZero,
   //     AddressZero,

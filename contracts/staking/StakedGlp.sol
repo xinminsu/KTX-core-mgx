@@ -5,25 +5,25 @@ pragma solidity 0.6.12;
 import "../libraries/math/SafeMath.sol";
 import "../libraries/token/IERC20.sol";
 
-import "../core/interfaces/IKlpManager.sol";
+import "../core/interfaces/IGlpManager.sol";
 
 import "./interfaces/IRewardTracker.sol";
 import "./interfaces/IRewardTracker.sol";
 
-// provide a way to transfer staked KLP tokens by unstaking from the sender
+// provide a way to transfer staked GLP tokens by unstaking from the sender
 // and staking for the receiver
 // tests in RewardRouterV2.js
-contract StakedKlp {
+contract StakedGlp {
     using SafeMath for uint256;
 
-    string public constant name = "StakedKlp";
-    string public constant symbol = "sKLP";
+    string public constant name = "StakedGlp";
+    string public constant symbol = "sGLP";
     uint8 public constant decimals = 18;
 
-    address public klp;
-    IKlpManager public klpManager;
-    address public stakedKlpTracker;
-    address public feeKlpTracker;
+    address public glp;
+    IGlpManager public glpManager;
+    address public stakedGlpTracker;
+    address public feeGlpTracker;
 
     mapping(address => mapping(address => uint256)) public allowances;
 
@@ -34,15 +34,15 @@ contract StakedKlp {
     );
 
     constructor(
-        address _klp,
-        IKlpManager _klpManager,
-        address _stakedKlpTracker,
-        address _feeKlpTracker
+        address _glp,
+        IGlpManager _glpManager,
+        address _stakedGlpTracker,
+        address _feeGlpTracker
     ) public {
-        klp = _klp;
-        klpManager = _klpManager;
-        stakedKlpTracker = _stakedKlpTracker;
-        feeKlpTracker = _feeKlpTracker;
+        glp = _glp;
+        glpManager = _glpManager;
+        stakedGlpTracker = _stakedGlpTracker;
+        feeGlpTracker = _feeGlpTracker;
     }
 
     function allowance(
@@ -75,7 +75,7 @@ contract StakedKlp {
     ) external returns (bool) {
         uint256 nextAllowance = allowances[_sender][msg.sender].sub(
             _amount,
-            "StakedKlp: transfer amount exceeds allowance"
+            "StakedGlp: transfer amount exceeds allowance"
         );
         _approve(_sender, msg.sender, nextAllowance);
         _transfer(_sender, _recipient, _amount);
@@ -83,11 +83,11 @@ contract StakedKlp {
     }
 
     function balanceOf(address _account) external view returns (uint256) {
-        return IRewardTracker(feeKlpTracker).depositBalances(_account, klp);
+        return IRewardTracker(feeGlpTracker).depositBalances(_account, glp);
     }
 
     function totalSupply() external view returns (uint256) {
-        return IERC20(stakedKlpTracker).totalSupply();
+        return IERC20(stakedGlpTracker).totalSupply();
     }
 
     function _approve(
@@ -97,11 +97,11 @@ contract StakedKlp {
     ) private {
         require(
             _owner != address(0),
-            "StakedKlp: approve from the zero address"
+            "StakedGlp: approve from the zero address"
         );
         require(
             _spender != address(0),
-            "StakedKlp: approve to the zero address"
+            "StakedGlp: approve to the zero address"
         );
 
         allowances[_owner][_spender] = _amount;
@@ -116,43 +116,43 @@ contract StakedKlp {
     ) private {
         require(
             _sender != address(0),
-            "StakedKlp: transfer from the zero address"
+            "StakedGlp: transfer from the zero address"
         );
         require(
             _recipient != address(0),
-            "StakedKlp: transfer to the zero address"
+            "StakedGlp: transfer to the zero address"
         );
 
         require(
-            klpManager.lastAddedAt(_sender).add(
-                klpManager.cooldownDuration()
+            glpManager.lastAddedAt(_sender).add(
+                glpManager.cooldownDuration()
             ) <= block.timestamp,
-            "StakedKlp: cooldown duration not yet passed"
+            "StakedGlp: cooldown duration not yet passed"
         );
 
-        IRewardTracker(stakedKlpTracker).unstakeForAccount(
+        IRewardTracker(stakedGlpTracker).unstakeForAccount(
             _sender,
-            feeKlpTracker,
+            feeGlpTracker,
             _amount,
             _sender
         );
-        IRewardTracker(feeKlpTracker).unstakeForAccount(
+        IRewardTracker(feeGlpTracker).unstakeForAccount(
             _sender,
-            klp,
+            glp,
             _amount,
             _sender
         );
 
-        IRewardTracker(feeKlpTracker).stakeForAccount(
+        IRewardTracker(feeGlpTracker).stakeForAccount(
             _sender,
             _recipient,
-            klp,
+            glp,
             _amount
         );
-        IRewardTracker(stakedKlpTracker).stakeForAccount(
+        IRewardTracker(stakedGlpTracker).stakeForAccount(
             _recipient,
             _recipient,
-            feeKlpTracker,
+            feeGlpTracker,
             _amount
         );
     }

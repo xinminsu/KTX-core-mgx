@@ -4,10 +4,10 @@ pragma solidity 0.6.12;
 
 import "../tokens/MintableBaseToken.sol";
 
-contract EsKTX is MintableBaseToken {
-    constructor() public MintableBaseToken("Escrowed KTC", "esKTC", 0) {}
+contract GMX is MintableBaseToken {
+    constructor() public MintableBaseToken("GMX Community Token", "KTC", 0) {}
 
     function id() external pure returns (string memory _name) {
-        return "esKTC";
+        return "GMX";
     }
 }

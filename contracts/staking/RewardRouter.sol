@@ -12,7 +12,7 @@ import "./interfaces/IRewardTracker.sol";
 import "./interfaces/IVester.sol";
 import "../tokens/interfaces/IMintable.sol";
 import "../tokens/interfaces/IWETH.sol";
-import "../core/interfaces/IKlpManager.sol";
+import "../core/interfaces/IGlpManager.sol";
 import "../access/Governable.sol";
 
 contract RewardRouter is ReentrancyGuard, Governable {
@@ -24,31 +24,31 @@ contract RewardRouter is ReentrancyGuard, Governable {
 
     address public weth;
 
-    address public ktx;
-    address public esKtx;
-    address public bnKtx;
+    address public gmx;
+    address public esGmx;
+    address public bnGmx;
 
-    address public klp; // KTX Liquidity Provider token
+    address public glp; // GMX Liquidity Provider token
 
-    address public stakedKtxTracker;
-    address public bonusKtxTracker;
-    address public feeKtxTracker;
+    address public stakedGmxTracker;
+    address public bonusGmxTracker;
+    address public feeGmxTracker;
 
-    address public stakedKlpTracker;
-    address public feeKlpTracker;
+    address public stakedGlpTracker;
+    address public feeGlpTracker;
 
-    address public klpManager;
+    address public glpManager;
 
-    address public ktxVester;
-    address public klpVester;
+    address public gmxVester;
+    address public glpVester;
 
     mapping(address => address) public pendingReceivers;
 
-    event StakeKtx(address account, address token, uint256 amount);
-    event UnstakeKtx(address account, address token, uint256 amount);
+    event StakeGmx(address account, address token, uint256 amount);
+    event UnstakeGmx(address account, address token, uint256 amount);
 
-    event StakeKlp(address account, uint256 amount);
-    event UnstakeKlp(address account, uint256 amount);
+    event StakeGlp(address account, uint256 amount);
+    event UnstakeGlp(address account, uint256 amount);
 
     receive() external payable {
         require(msg.sender == weth, "Router: invalid sender");
@@ -56,41 +56,41 @@ contract RewardRouter is ReentrancyGuard, Governable {
 
     function initialize(
         address _weth,
-        address _ktx,
-        address _esKtx,
-        address _bnKtx,
-        address _klp,
-        address _stakedKtxTracker,
-        address _bonusKtxTracker,
-        address _feeKtxTracker,
-        address _feeKlpTracker,
-        address _stakedKlpTracker,
-        address _klpManager,
-        address _ktxVester,
-        address _klpVester
+        address _gmx,
+        address _esGmx,
+        address _bnGmx,
+        address _glp,
+        address _stakedGmxTracker,
+        address _bonusGmxTracker,
+        address _feeGmxTracker,
+        address _feeGlpTracker,
+        address _stakedGlpTracker,
+        address _glpManager,
+        address _gmxVester,
+        address _glpVester
     ) external onlyGov {
         require(!isInitialized, "RewardRouter: already initialized");
         isInitialized = true;
 
         weth = _weth;
 
-        ktx = _ktx;
-        esKtx = _esKtx;
-        bnKtx = _bnKtx;
+        gmx = _gmx;
+        esGmx = _esGmx;
+        bnGmx = _bnGmx;
 
-        klp = _klp;
+        glp = _glp;
 
-        stakedKtxTracker = _stakedKtxTracker;
-        bonusKtxTracker = _bonusKtxTracker;
-        feeKtxTracker = _feeKtxTracker;
+        stakedGmxTracker = _stakedGmxTracker;
+        bonusGmxTracker = _bonusGmxTracker;
+        feeGmxTracker = _feeGmxTracker;
 
-        feeKlpTracker = _feeKlpTracker;
-        stakedKlpTracker = _stakedKlpTracker;
+        feeGlpTracker = _feeGlpTracker;
+        stakedGlpTracker = _stakedGlpTracker;
 
-        klpManager = _klpManager;
+        glpManager = _glpManager;
 
-        ktxVester = _ktxVester;
-        klpVester = _klpVester;
+        gmxVester = _gmxVester;
+        glpVester = _glpVester;
     }
 
     // to help users who accidentally send their tokens to this contract
@@ -102,169 +102,169 @@ contract RewardRouter is ReentrancyGuard, Governable {
         IERC20(_token).safeTransfer(_account, _amount);
     }
 
-    function batchStakeKtxForAccount(
+    function batchStakeGmxForAccount(
         address[] memory _accounts,
         uint256[] memory _amounts
     ) external nonReentrant onlyGov {
-        address _ktx = ktx;
+        address _gmx = gmx;
         for (uint256 i = 0; i < _accounts.length; i++) {
-            _stakeKtx(msg.sender, _accounts[i], _ktx, _amounts[i]);
+            _stakeGmx(msg.sender, _accounts[i], _gmx, _amounts[i]);
         }
     }
 
-    function stakeKtxForAccount(
+    function stakeGmxForAccount(
         address _account,
         uint256 _amount
     ) external nonReentrant onlyGov {
-        _stakeKtx(msg.sender, _account, ktx, _amount);
+        _stakeGmx(msg.sender, _account, gmx, _amount);
     }
 
-    function stakeKtx(uint256 _amount) external nonReentrant {
-        _stakeKtx(msg.sender, msg.sender, ktx, _amount);
+    function stakeGmx(uint256 _amount) external nonReentrant {
+        _stakeGmx(msg.sender, msg.sender, gmx, _amount);
     }
 
-    function stakeEsKtx(uint256 _amount) external nonReentrant {
-        _stakeKtx(msg.sender, msg.sender, esKtx, _amount);
+    function stakeEsGmx(uint256 _amount) external nonReentrant {
+        _stakeGmx(msg.sender, msg.sender, esGmx, _amount);
     }
 
-    function unstakeKtx(uint256 _amount) external nonReentrant {
-        _unstakeKtx(msg.sender, ktx, _amount, true);
+    function unstakeGmx(uint256 _amount) external nonReentrant {
+        _unstakeGmx(msg.sender, gmx, _amount, true);
     }
 
-    function unstakeEsKtx(uint256 _amount) external nonReentrant {
-        _unstakeKtx(msg.sender, esKtx, _amount, true);
+    function unstakeEsGmx(uint256 _amount) external nonReentrant {
+        _unstakeGmx(msg.sender, esGmx, _amount, true);
     }
 
-    function mintAndStakeKlp(
+    function mintAndStakeGlp(
         address _token,
         uint256 _amount,
         uint256 _minUsdg,
-        uint256 _minKlp
+        uint256 _minGlp
     ) external nonReentrant returns (uint256) {
         require(_amount > 0, "RewardRouter: invalid _amount");
 
         address account = msg.sender;
-        uint256 klpAmount = IKlpManager(klpManager).addLiquidityForAccount(
+        uint256 glpAmount = IGlpManager(glpManager).addLiquidityForAccount(
             account,
             account,
             _token,
             _amount,
             _minUsdg,
-            _minKlp
+            _minGlp
         );
-        IRewardTracker(feeKlpTracker).stakeForAccount(
+        IRewardTracker(feeGlpTracker).stakeForAccount(
             account,
             account,
-            klp,
-            klpAmount
+            glp,
+            glpAmount
         );
-        IRewardTracker(stakedKlpTracker).stakeForAccount(
+        IRewardTracker(stakedGlpTracker).stakeForAccount(
             account,
             account,
-            feeKlpTracker,
-            klpAmount
+            feeGlpTracker,
+            glpAmount
         );
 
-        emit StakeKlp(account, klpAmount);
+        emit StakeGlp(account, glpAmount);
 
-        return klpAmount;
+        return glpAmount;
     }
 
-    function mintAndStakeKlpETH(
+    function mintAndStakeGlpETH(
         uint256 _minUsdg,
-        uint256 _minKlp
+        uint256 _minGlp
     ) external payable nonReentrant returns (uint256) {
         require(msg.value > 0, "RewardRouter: invalid msg.value");
 
         IWETH(weth).deposit{value: msg.value}();
-        IERC20(weth).approve(klpManager, msg.value);
+        IERC20(weth).approve(glpManager, msg.value);
 
         address account = msg.sender;
-        uint256 klpAmount = IKlpManager(klpManager).addLiquidityForAccount(
+        uint256 glpAmount = IGlpManager(glpManager).addLiquidityForAccount(
             address(this),
             account,
             weth,
             msg.value,
             _minUsdg,
-            _minKlp
+            _minGlp
         );
 
-        IRewardTracker(feeKlpTracker).stakeForAccount(
+        IRewardTracker(feeGlpTracker).stakeForAccount(
             account,
             account,
-            klp,
-            klpAmount
+            glp,
+            glpAmount
         );
-        IRewardTracker(stakedKlpTracker).stakeForAccount(
+        IRewardTracker(stakedGlpTracker).stakeForAccount(
             account,
             account,
-            feeKlpTracker,
-            klpAmount
+            feeGlpTracker,
+            glpAmount
         );
 
-        emit StakeKlp(account, klpAmount);
+        emit StakeGlp(account, glpAmount);
 
-        return klpAmount;
+        return glpAmount;
     }
 
-    function unstakeAndRedeemKlp(
+    function unstakeAndRedeemGlp(
         address _tokenOut,
-        uint256 _klpAmount,
+        uint256 _glpAmount,
         uint256 _minOut,
         address _receiver
     ) external nonReentrant returns (uint256) {
-        require(_klpAmount > 0, "RewardRouter: invalid _klpAmount");
+        require(_glpAmount > 0, "RewardRouter: invalid _glpAmount");
 
         address account = msg.sender;
-        IRewardTracker(stakedKlpTracker).unstakeForAccount(
+        IRewardTracker(stakedGlpTracker).unstakeForAccount(
             account,
-            feeKlpTracker,
-            _klpAmount,
+            feeGlpTracker,
+            _glpAmount,
             account
         );
-        IRewardTracker(feeKlpTracker).unstakeForAccount(
+        IRewardTracker(feeGlpTracker).unstakeForAccount(
             account,
-            klp,
-            _klpAmount,
+            glp,
+            _glpAmount,
             account
         );
-        uint256 amountOut = IKlpManager(klpManager).removeLiquidityForAccount(
+        uint256 amountOut = IGlpManager(glpManager).removeLiquidityForAccount(
             account,
             _tokenOut,
-            _klpAmount,
+            _glpAmount,
             _minOut,
             _receiver
         );
 
-        emit UnstakeKlp(account, _klpAmount);
+        emit UnstakeGlp(account, _glpAmount);
 
         return amountOut;
     }
 
-    function unstakeAndRedeemKlpETH(
-        uint256 _klpAmount,
+    function unstakeAndRedeemGlpETH(
+        uint256 _glpAmount,
         uint256 _minOut,
         address payable _receiver
     ) external nonReentrant returns (uint256) {
-        require(_klpAmount > 0, "RewardRouter: invalid _klpAmount");
+        require(_glpAmount > 0, "RewardRouter: invalid _glpAmount");
 
         address account = msg.sender;
-        IRewardTracker(stakedKlpTracker).unstakeForAccount(
+        IRewardTracker(stakedGlpTracker).unstakeForAccount(
             account,
-            feeKlpTracker,
-            _klpAmount,
+            feeGlpTracker,
+            _glpAmount,
             account
         );
-        IRewardTracker(feeKlpTracker).unstakeForAccount(
+        IRewardTracker(feeGlpTracker).unstakeForAccount(
             account,
-            klp,
-            _klpAmount,
+            glp,
+            _glpAmount,
             account
         );
-        uint256 amountOut = IKlpManager(klpManager).removeLiquidityForAccount(
+        uint256 amountOut = IGlpManager(glpManager).removeLiquidityForAccount(
             account,
             weth,
-            _klpAmount,
+            _glpAmount,
             _minOut,
             address(this)
         );
@@ -273,7 +273,7 @@ contract RewardRouter is ReentrancyGuard, Governable {
 
         _receiver.sendValue(amountOut);
 
-        emit UnstakeKlp(account, _klpAmount);
+        emit UnstakeGlp(account, _glpAmount);
 
         return amountOut;
     }
@@ -281,25 +281,25 @@ contract RewardRouter is ReentrancyGuard, Governable {
     function claim() external nonReentrant {
         address account = msg.sender;
 
-        IRewardTracker(feeKtxTracker).claimForAccount(account, account);
-        IRewardTracker(feeKlpTracker).claimForAccount(account, account);
+        IRewardTracker(feeGmxTracker).claimForAccount(account, account);
+        IRewardTracker(feeGlpTracker).claimForAccount(account, account);
 
-        IRewardTracker(stakedKtxTracker).claimForAccount(account, account);
-        IRewardTracker(stakedKlpTracker).claimForAccount(account, account);
+        IRewardTracker(stakedGmxTracker).claimForAccount(account, account);
+        IRewardTracker(stakedGlpTracker).claimForAccount(account, account);
     }
 
-    function claimEsKtx() external nonReentrant {
+    function claimEsGmx() external nonReentrant {
         address account = msg.sender;
 
-        IRewardTracker(stakedKtxTracker).claimForAccount(account, account);
-        IRewardTracker(stakedKlpTracker).claimForAccount(account, account);
+        IRewardTracker(stakedGmxTracker).claimForAccount(account, account);
+        IRewardTracker(stakedGlpTracker).claimForAccount(account, account);
     }
 
     function claimFees() external nonReentrant {
         address account = msg.sender;
 
-        IRewardTracker(feeKtxTracker).claimForAccount(account, account);
-        IRewardTracker(feeKlpTracker).claimForAccount(account, account);
+        IRewardTracker(feeGmxTracker).claimForAccount(account, account);
+        IRewardTracker(feeGlpTracker).claimForAccount(account, account);
     }
 
     function compound() external nonReentrant {
@@ -313,66 +313,66 @@ contract RewardRouter is ReentrancyGuard, Governable {
     }
 
     function handleRewards(
-        bool _shouldClaimKtx,
-        bool _shouldStakeKtx,
-        bool _shouldClaimEsKtx,
-        bool _shouldStakeEsKtx,
+        bool _shouldClaimGmx,
+        bool _shouldStakeGmx,
+        bool _shouldClaimEsGmx,
+        bool _shouldStakeEsGmx,
         bool _shouldStakeMultiplierPoints,
         bool _shouldClaimWeth,
         bool _shouldConvertWethToEth
     ) external nonReentrant {
         address account = msg.sender;
 
-        uint256 ktxAmount = 0;
-        if (_shouldClaimKtx) {
-            uint256 ktxAmount0 = IVester(ktxVester).claimForAccount(
+        uint256 gmxAmount = 0;
+        if (_shouldClaimGmx) {
+            uint256 gmxAmount0 = IVester(gmxVester).claimForAccount(
                 account,
                 account
             );
-            uint256 ktxAmount1 = IVester(klpVester).claimForAccount(
+            uint256 gmxAmount1 = IVester(glpVester).claimForAccount(
                 account,
                 account
             );
-            ktxAmount = ktxAmount0.add(ktxAmount1);
+            gmxAmount = gmxAmount0.add(gmxAmount1);
         }
 
-        if (_shouldStakeKtx && ktxAmount > 0) {
-            _stakeKtx(account, account, ktx, ktxAmount);
+        if (_shouldStakeGmx && gmxAmount > 0) {
+            _stakeGmx(account, account, gmx, gmxAmount);
         }
 
-        uint256 esKtxAmount = 0;
-        if (_shouldClaimEsKtx) {
-            uint256 esKtxAmount0 = IRewardTracker(stakedKtxTracker)
+        uint256 esGmxAmount = 0;
+        if (_shouldClaimEsGmx) {
+            uint256 esGmxAmount0 = IRewardTracker(stakedGmxTracker)
                 .claimForAccount(account, account);
-            uint256 esKtxAmount1 = IRewardTracker(stakedKlpTracker)
+            uint256 esGmxAmount1 = IRewardTracker(stakedGlpTracker)
                 .claimForAccount(account, account);
-            esKtxAmount = esKtxAmount0.add(esKtxAmount1);
+            esGmxAmount = esGmxAmount0.add(esGmxAmount1);
         }
 
-        if (_shouldStakeEsKtx && esKtxAmount > 0) {
-            _stakeKtx(account, account, esKtx, esKtxAmount);
+        if (_shouldStakeEsGmx && esGmxAmount > 0) {
+            _stakeGmx(account, account, esGmx, esGmxAmount);
         }
 
         if (_shouldStakeMultiplierPoints) {
-            uint256 bnKtxAmount = IRewardTracker(bonusKtxTracker)
+            uint256 bnGmxAmount = IRewardTracker(bonusGmxTracker)
                 .claimForAccount(account, account);
-            if (bnKtxAmount > 0) {
-                IRewardTracker(feeKtxTracker).stakeForAccount(
+            if (bnGmxAmount > 0) {
+                IRewardTracker(feeGmxTracker).stakeForAccount(
                     account,
                     account,
-                    bnKtx,
-                    bnKtxAmount
+                    bnGmx,
+                    bnGmxAmount
                 );
             }
         }
 
         if (_shouldClaimWeth) {
             if (_shouldConvertWethToEth) {
-                uint256 weth0 = IRewardTracker(feeKtxTracker).claimForAccount(
+                uint256 weth0 = IRewardTracker(feeGmxTracker).claimForAccount(
                     account,
                     address(this)
                 );
-                uint256 weth1 = IRewardTracker(feeKlpTracker).claimForAccount(
+                uint256 weth1 = IRewardTracker(feeGlpTracker).claimForAccount(
                     account,
                     address(this)
                 );
@@ -382,8 +382,8 @@ contract RewardRouter is ReentrancyGuard, Governable {
 
                 payable(account).sendValue(wethAmount);
             } else {
-                IRewardTracker(feeKtxTracker).claimForAccount(account, account);
-                IRewardTracker(feeKlpTracker).claimForAccount(account, account);
+                IRewardTracker(feeGmxTracker).claimForAccount(account, account);
+                IRewardTracker(feeGlpTracker).claimForAccount(account, account);
             }
         }
     }
@@ -398,11 +398,11 @@ contract RewardRouter is ReentrancyGuard, Governable {
 
     function signalTransfer(address _receiver) external nonReentrant {
         require(
-            IERC20(ktxVester).balanceOf(msg.sender) == 0,
+            IERC20(gmxVester).balanceOf(msg.sender) == 0,
             "RewardRouter: sender has vested tokens"
         );
         require(
-            IERC20(klpVester).balanceOf(msg.sender) == 0,
+            IERC20(glpVester).balanceOf(msg.sender) == 0,
             "RewardRouter: sender has vested tokens"
         );
 
@@ -412,11 +412,11 @@ contract RewardRouter is ReentrancyGuard, Governable {
 
     function acceptTransfer(address _sender) external nonReentrant {
         require(
-            IERC20(ktxVester).balanceOf(_sender) == 0,
+            IERC20(gmxVester).balanceOf(_sender) == 0,
             "RewardRouter: sender has vested tokens"
         );
         require(
-            IERC20(klpVester).balanceOf(_sender) == 0,
+            IERC20(glpVester).balanceOf(_sender) == 0,
             "RewardRouter: sender has vested tokens"
         );
 
@@ -430,200 +430,200 @@ contract RewardRouter is ReentrancyGuard, Governable {
         _validateReceiver(receiver);
         _compound(_sender);
 
-        uint256 stakedKtx = IRewardTracker(stakedKtxTracker).depositBalances(
+        uint256 stakedGmx = IRewardTracker(stakedGmxTracker).depositBalances(
             _sender,
-            ktx
+            gmx
         );
-        if (stakedKtx > 0) {
-            _unstakeKtx(_sender, ktx, stakedKtx, false);
-            _stakeKtx(_sender, receiver, ktx, stakedKtx);
+        if (stakedGmx > 0) {
+            _unstakeGmx(_sender, gmx, stakedGmx, false);
+            _stakeGmx(_sender, receiver, gmx, stakedGmx);
         }
 
-        uint256 stakedEsKtx = IRewardTracker(stakedKtxTracker).depositBalances(
+        uint256 stakedEsGmx = IRewardTracker(stakedGmxTracker).depositBalances(
             _sender,
-            esKtx
+            esGmx
         );
-        if (stakedEsKtx > 0) {
-            _unstakeKtx(_sender, esKtx, stakedEsKtx, false);
-            _stakeKtx(_sender, receiver, esKtx, stakedEsKtx);
+        if (stakedEsGmx > 0) {
+            _unstakeGmx(_sender, esGmx, stakedEsGmx, false);
+            _stakeGmx(_sender, receiver, esGmx, stakedEsGmx);
         }
 
-        uint256 stakedBnKtx = IRewardTracker(feeKtxTracker).depositBalances(
+        uint256 stakedBnGmx = IRewardTracker(feeGmxTracker).depositBalances(
             _sender,
-            bnKtx
+            bnGmx
         );
-        if (stakedBnKtx > 0) {
-            IRewardTracker(feeKtxTracker).unstakeForAccount(
+        if (stakedBnGmx > 0) {
+            IRewardTracker(feeGmxTracker).unstakeForAccount(
                 _sender,
-                bnKtx,
-                stakedBnKtx,
+                bnGmx,
+                stakedBnGmx,
                 _sender
             );
-            IRewardTracker(feeKtxTracker).stakeForAccount(
+            IRewardTracker(feeGmxTracker).stakeForAccount(
                 _sender,
                 receiver,
-                bnKtx,
-                stakedBnKtx
+                bnGmx,
+                stakedBnGmx
             );
         }
 
-        uint256 esKtxBalance = IERC20(esKtx).balanceOf(_sender);
-        if (esKtxBalance > 0) {
-            IERC20(esKtx).transferFrom(_sender, receiver, esKtxBalance);
+        uint256 esGmxBalance = IERC20(esGmx).balanceOf(_sender);
+        if (esGmxBalance > 0) {
+            IERC20(esGmx).transferFrom(_sender, receiver, esGmxBalance);
         }
 
-        uint256 klpAmount = IRewardTracker(feeKlpTracker).depositBalances(
+        uint256 glpAmount = IRewardTracker(feeGlpTracker).depositBalances(
             _sender,
-            klp
+            glp
         );
-        if (klpAmount > 0) {
-            IRewardTracker(stakedKlpTracker).unstakeForAccount(
+        if (glpAmount > 0) {
+            IRewardTracker(stakedGlpTracker).unstakeForAccount(
                 _sender,
-                feeKlpTracker,
-                klpAmount,
+                feeGlpTracker,
+                glpAmount,
                 _sender
             );
-            IRewardTracker(feeKlpTracker).unstakeForAccount(
+            IRewardTracker(feeGlpTracker).unstakeForAccount(
                 _sender,
-                klp,
-                klpAmount,
+                glp,
+                glpAmount,
                 _sender
             );
 
-            IRewardTracker(feeKlpTracker).stakeForAccount(
+            IRewardTracker(feeGlpTracker).stakeForAccount(
                 _sender,
                 receiver,
-                klp,
-                klpAmount
+                glp,
+                glpAmount
             );
-            IRewardTracker(stakedKlpTracker).stakeForAccount(
+            IRewardTracker(stakedGlpTracker).stakeForAccount(
                 receiver,
                 receiver,
-                feeKlpTracker,
-                klpAmount
+                feeGlpTracker,
+                glpAmount
             );
         }
 
-        IVester(ktxVester).transferStakeValues(_sender, receiver);
-        IVester(klpVester).transferStakeValues(_sender, receiver);
+        IVester(gmxVester).transferStakeValues(_sender, receiver);
+        IVester(glpVester).transferStakeValues(_sender, receiver);
     }
 
     function _validateReceiver(address _receiver) private view {
         require(
-            IRewardTracker(stakedKtxTracker).averageStakedAmounts(_receiver) ==
+            IRewardTracker(stakedGmxTracker).averageStakedAmounts(_receiver) ==
                 0,
-            "RewardRouter: stakedKtxTracker.averageStakedAmounts > 0"
+            "RewardRouter: stakedGmxTracker.averageStakedAmounts > 0"
         );
         require(
-            IRewardTracker(stakedKtxTracker).cumulativeRewards(_receiver) == 0,
-            "RewardRouter: stakedKtxTracker.cumulativeRewards > 0"
+            IRewardTracker(stakedGmxTracker).cumulativeRewards(_receiver) == 0,
+            "RewardRouter: stakedGmxTracker.cumulativeRewards > 0"
         );
 
         require(
-            IRewardTracker(bonusKtxTracker).averageStakedAmounts(_receiver) ==
+            IRewardTracker(bonusGmxTracker).averageStakedAmounts(_receiver) ==
                 0,
-            "RewardRouter: bonusKtxTracker.averageStakedAmounts > 0"
+            "RewardRouter: bonusGmxTracker.averageStakedAmounts > 0"
         );
         require(
-            IRewardTracker(bonusKtxTracker).cumulativeRewards(_receiver) == 0,
-            "RewardRouter: bonusKtxTracker.cumulativeRewards > 0"
-        );
-
-        require(
-            IRewardTracker(feeKtxTracker).averageStakedAmounts(_receiver) == 0,
-            "RewardRouter: feeKtxTracker.averageStakedAmounts > 0"
-        );
-        require(
-            IRewardTracker(feeKtxTracker).cumulativeRewards(_receiver) == 0,
-            "RewardRouter: feeKtxTracker.cumulativeRewards > 0"
+            IRewardTracker(bonusGmxTracker).cumulativeRewards(_receiver) == 0,
+            "RewardRouter: bonusGmxTracker.cumulativeRewards > 0"
         );
 
         require(
-            IVester(ktxVester).transferredAverageStakedAmounts(_receiver) == 0,
-            "RewardRouter: ktxVester.transferredAverageStakedAmounts > 0"
+            IRewardTracker(feeGmxTracker).averageStakedAmounts(_receiver) == 0,
+            "RewardRouter: feeGmxTracker.averageStakedAmounts > 0"
         );
         require(
-            IVester(ktxVester).transferredCumulativeRewards(_receiver) == 0,
-            "RewardRouter: ktxVester.transferredCumulativeRewards > 0"
+            IRewardTracker(feeGmxTracker).cumulativeRewards(_receiver) == 0,
+            "RewardRouter: feeGmxTracker.cumulativeRewards > 0"
         );
 
         require(
-            IRewardTracker(stakedKlpTracker).averageStakedAmounts(_receiver) ==
+            IVester(gmxVester).transferredAverageStakedAmounts(_receiver) == 0,
+            "RewardRouter: gmxVester.transferredAverageStakedAmounts > 0"
+        );
+        require(
+            IVester(gmxVester).transferredCumulativeRewards(_receiver) == 0,
+            "RewardRouter: gmxVester.transferredCumulativeRewards > 0"
+        );
+
+        require(
+            IRewardTracker(stakedGlpTracker).averageStakedAmounts(_receiver) ==
                 0,
-            "RewardRouter: stakedKlpTracker.averageStakedAmounts > 0"
+            "RewardRouter: stakedGlpTracker.averageStakedAmounts > 0"
         );
         require(
-            IRewardTracker(stakedKlpTracker).cumulativeRewards(_receiver) == 0,
-            "RewardRouter: stakedKlpTracker.cumulativeRewards > 0"
-        );
-
-        require(
-            IRewardTracker(feeKlpTracker).averageStakedAmounts(_receiver) == 0,
-            "RewardRouter: feeKlpTracker.averageStakedAmounts > 0"
-        );
-        require(
-            IRewardTracker(feeKlpTracker).cumulativeRewards(_receiver) == 0,
-            "RewardRouter: feeKlpTracker.cumulativeRewards > 0"
+            IRewardTracker(stakedGlpTracker).cumulativeRewards(_receiver) == 0,
+            "RewardRouter: stakedGlpTracker.cumulativeRewards > 0"
         );
 
         require(
-            IVester(klpVester).transferredAverageStakedAmounts(_receiver) == 0,
-            "RewardRouter: ktxVester.transferredAverageStakedAmounts > 0"
+            IRewardTracker(feeGlpTracker).averageStakedAmounts(_receiver) == 0,
+            "RewardRouter: feeGlpTracker.averageStakedAmounts > 0"
         );
         require(
-            IVester(klpVester).transferredCumulativeRewards(_receiver) == 0,
-            "RewardRouter: ktxVester.transferredCumulativeRewards > 0"
+            IRewardTracker(feeGlpTracker).cumulativeRewards(_receiver) == 0,
+            "RewardRouter: feeGlpTracker.cumulativeRewards > 0"
         );
 
         require(
-            IERC20(ktxVester).balanceOf(_receiver) == 0,
-            "RewardRouter: ktxVester.balance > 0"
+            IVester(glpVester).transferredAverageStakedAmounts(_receiver) == 0,
+            "RewardRouter: gmxVester.transferredAverageStakedAmounts > 0"
         );
         require(
-            IERC20(klpVester).balanceOf(_receiver) == 0,
-            "RewardRouter: klpVester.balance > 0"
+            IVester(glpVester).transferredCumulativeRewards(_receiver) == 0,
+            "RewardRouter: gmxVester.transferredCumulativeRewards > 0"
+        );
+
+        require(
+            IERC20(gmxVester).balanceOf(_receiver) == 0,
+            "RewardRouter: gmxVester.balance > 0"
+        );
+        require(
+            IERC20(glpVester).balanceOf(_receiver) == 0,
+            "RewardRouter: glpVester.balance > 0"
         );
     }
 
     function _compound(address _account) private {
-        _compoundKtx(_account);
-        _compoundKlp(_account);
+        _compoundGmx(_account);
+        _compoundGlp(_account);
     }
 
-    function _compoundKtx(address _account) private {
-        uint256 esKtxAmount = IRewardTracker(stakedKtxTracker).claimForAccount(
+    function _compoundGmx(address _account) private {
+        uint256 esGmxAmount = IRewardTracker(stakedGmxTracker).claimForAccount(
             _account,
             _account
         );
-        if (esKtxAmount > 0) {
-            _stakeKtx(_account, _account, esKtx, esKtxAmount);
+        if (esGmxAmount > 0) {
+            _stakeGmx(_account, _account, esGmx, esGmxAmount);
         }
 
-        uint256 bnKtxAmount = IRewardTracker(bonusKtxTracker).claimForAccount(
+        uint256 bnGmxAmount = IRewardTracker(bonusGmxTracker).claimForAccount(
             _account,
             _account
         );
-        if (bnKtxAmount > 0) {
-            IRewardTracker(feeKtxTracker).stakeForAccount(
+        if (bnGmxAmount > 0) {
+            IRewardTracker(feeGmxTracker).stakeForAccount(
                 _account,
                 _account,
-                bnKtx,
-                bnKtxAmount
+                bnGmx,
+                bnGmxAmount
             );
         }
     }
 
-    function _compoundKlp(address _account) private {
-        uint256 esKtxAmount = IRewardTracker(stakedKlpTracker).claimForAccount(
+    function _compoundGlp(address _account) private {
+        uint256 esGmxAmount = IRewardTracker(stakedGlpTracker).claimForAccount(
             _account,
             _account
         );
-        if (esKtxAmount > 0) {
-            _stakeKtx(_account, _account, esKtx, esKtxAmount);
+        if (esGmxAmount > 0) {
+            _stakeGmx(_account, _account, esGmx, esGmxAmount);
         }
     }
 
-    function _stakeKtx(
+    function _stakeGmx(
         address _fundingAccount,
         address _account,
         address _token,
@@ -631,87 +631,87 @@ contract RewardRouter is ReentrancyGuard, Governable {
     ) private {
         require(_amount > 0, "RewardRouter: invalid _amount");
 
-        IRewardTracker(stakedKtxTracker).stakeForAccount(
+        IRewardTracker(stakedGmxTracker).stakeForAccount(
             _fundingAccount,
             _account,
             _token,
             _amount
         );
-        IRewardTracker(bonusKtxTracker).stakeForAccount(
+        IRewardTracker(bonusGmxTracker).stakeForAccount(
             _account,
             _account,
-            stakedKtxTracker,
+            stakedGmxTracker,
             _amount
         );
-        IRewardTracker(feeKtxTracker).stakeForAccount(
+        IRewardTracker(feeGmxTracker).stakeForAccount(
             _account,
             _account,
-            bonusKtxTracker,
+            bonusGmxTracker,
             _amount
         );
 
-        emit StakeKtx(_account, _token, _amount);
+        emit StakeGmx(_account, _token, _amount);
     }
 
-    function _unstakeKtx(
+    function _unstakeGmx(
         address _account,
         address _token,
         uint256 _amount,
-        bool _shouldReduceBnKtx
+        bool _shouldReduceBnGmx
     ) private {
         require(_amount > 0, "RewardRouter: invalid _amount");
 
-        uint256 balance = IRewardTracker(stakedKtxTracker).stakedAmounts(
+        uint256 balance = IRewardTracker(stakedGmxTracker).stakedAmounts(
             _account
         );
 
-        IRewardTracker(feeKtxTracker).unstakeForAccount(
+        IRewardTracker(feeGmxTracker).unstakeForAccount(
             _account,
-            bonusKtxTracker,
+            bonusGmxTracker,
             _amount,
             _account
         );
-        IRewardTracker(bonusKtxTracker).unstakeForAccount(
+        IRewardTracker(bonusGmxTracker).unstakeForAccount(
             _account,
-            stakedKtxTracker,
+            stakedGmxTracker,
             _amount,
             _account
         );
-        IRewardTracker(stakedKtxTracker).unstakeForAccount(
+        IRewardTracker(stakedGmxTracker).unstakeForAccount(
             _account,
             _token,
             _amount,
             _account
         );
 
-        if (_shouldReduceBnKtx) {
-            uint256 bnKtxAmount = IRewardTracker(bonusKtxTracker)
+        if (_shouldReduceBnGmx) {
+            uint256 bnGmxAmount = IRewardTracker(bonusGmxTracker)
                 .claimForAccount(_account, _account);
-            if (bnKtxAmount > 0) {
-                IRewardTracker(feeKtxTracker).stakeForAccount(
+            if (bnGmxAmount > 0) {
+                IRewardTracker(feeGmxTracker).stakeForAccount(
                     _account,
                     _account,
-                    bnKtx,
-                    bnKtxAmount
+                    bnGmx,
+                    bnGmxAmount
                 );
             }
 
-            uint256 stakedBnKtx = IRewardTracker(feeKtxTracker).depositBalances(
+            uint256 stakedBnGmx = IRewardTracker(feeGmxTracker).depositBalances(
                 _account,
-                bnKtx
+                bnGmx
             );
-            if (stakedBnKtx > 0) {
-                uint256 reductionAmount = stakedBnKtx.mul(_amount).div(balance);
-                IRewardTracker(feeKtxTracker).unstakeForAccount(
+            if (stakedBnGmx > 0) {
+                uint256 reductionAmount = stakedBnGmx.mul(_amount).div(balance);
+                IRewardTracker(feeGmxTracker).unstakeForAccount(
                     _account,
-                    bnKtx,
+                    bnGmx,
                     reductionAmount,
                     _account
                 );
-                IMintable(bnKtx).burn(_account, reductionAmount);
+                IMintable(bnGmx).burn(_account, reductionAmount);
             }
         }
 
-        emit UnstakeKtx(_account, _token, _amount);
+        emit UnstakeGmx(_account, _token, _amount);
     }
 }
